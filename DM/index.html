@@ -4,9 +4,34 @@
   <meta charset="UTF-8">
   <title>DM Control Panel</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    #chat { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; background: #f0f0f0; }
-    #dmInput { width: 100%; padding: 10px; margin-top: 10px; }
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #111;
+      color: #00ff00;
+      padding: 20px;
+    }
+    h2 {
+      color: #00ff00;
+    }
+    #chat {
+      border: 2px solid #00ff00;
+      height: 400px;
+      overflow-y: scroll;
+      padding: 10px;
+      background: black;
+      white-space: pre-wrap;
+    }
+    #dmInput {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: black;
+      color: #00ff00;
+      border: 2px solid #00ff00;
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      outline: none;
+    }
   </style>
 </head>
 <body>
@@ -33,7 +58,7 @@
     const chatDiv = document.getElementById("chat");
     const dmInput = document.getElementById("dmInput");
 
-    // Get latest session automatically
+    // Automatically get latest session
     let sessionRef;
     firebase.database().ref('chat').limitToLast(1).on('child_added', snapshot => {
       const sessionId = snapshot.key;
