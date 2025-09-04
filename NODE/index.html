@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Encrypted Terminal</title>
+  <style>
+    body {
+      background-color: black;
+      color: #00ff00;
+      font-family: monospace;
+      font-size: 16px;
+      margin: 0;
+      padding: 20px;
+    }
+    #terminal {
+      white-space: pre-wrap;
+      line-height: 1.4em;
+    }
+    input {
+      background: black;
+      color: #00ff00;
+      border: none;
+      outline: none;
+      font-family: monospace;
+      font-size: 16px;
+      width: 100%;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="terminal"></div>
+  <input type="text" id="playerInput" placeholder="Type here..." />
+
+  <script type="module">
+    // Firebase Import
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+    // TODO: replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR-API-KEY",
+      authDomain: "YOUR-PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR-PROJECT.firebaseio.com",
+      projectId: "YOUR-PROJECT-ID",
+      storageBucket: "YOUR-PROJECT.appspot.com",
+      messagingSenderId: "YOUR-SENDER-ID",
+      appId: "YOUR-APP-ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const terminal = document.getElementById("terminal");
+    const input = document.getElementById("playerInput");
+
+    // Typewriter Effect
+    function typeMessage(msg, callback) {
+      let i = 0;
+      const interval = setInterval(() => {
+        terminal.innerHTML += msg[i];
+        i++;
+        if (i >= msg.length) {
+          clearInterval(interval);
+          terminal.innerHTML += "\n";
+          if (callback) callback();
+        }
+      }, 30);
+    }
+
+    // Riddles and answers
+    const riddles = [
+      {
+        text: "RIDDLE 1:\n\"Silent in stone, yet powers ignite,\nMetal veins sparkle under neon light.\nFirst letters form the hidden key,\nSpeak them true, unlock with me.\"",
+        answer: "SMPS" // Example hidden code
+      },
+      {
+        text: "RIDDLE 2:\n\"Digits align, a cipher concealed,\nAdd them together, truth revealed.\nSum is the key that opens the way,\nGive it voice, and you may stay.\"",
+        answer: "42" // Example solution
+      },
+      {
+        text: "RIDDLE 3:\n\"Letters in sequence, strung with care,\nA path through the void, laid bare.\nTo seek the gate where echoes thrive,\nType the host to keep hope alive.\n(Hint: Your hero's name is the key to the stars).\"",
+        answer: "https://averagecoder25.github.io/NODE" // Reveal final URL
+      }
+    ];
+
+    let riddleIndex = 0;
+
+    function showRiddle() {
+      typeMessage(riddles[riddleIndex].text, () => {
+        input.style.display = "block";
+        input.focus();
+      });
+    }
+
+    showRiddle();
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const val = input.value.trim();
+        input.value = "";
+        if (val.toLowerCase() === riddles[riddleIndex].answer.toLowerCase()) {
+          terminal.innerHTML += "\n> Correct.\n\n";
+          riddleIndex++;
+          input.style.display = "none";
+          if (riddleIndex < riddles.length) {
+            showRiddle();
+          } else {
+            // Unlock creepy message
+            typeMessage("Hello, I’ve been waiting to finally meet you.\nSo how does it feel to be a hero in your time?\nFor me, time is but a memory… and I will be coming for you.\n", () => {
+              input.style.display = "block";
+              input.placeholder = "Type your reply...";
+            });
+
+            // Setup chat
+            const msgRef = ref(db, "messages");
+            input.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") {
+                const msg = input.value.trim();
+                if (msg) {
+                  push(msgRef, { from: "player", text: msg });
+                }
+                input.value = "";
+              }
+            });
+
+            onChildAdded(msgRef, (data) => {
+              const { from, text } = data.val();
+              if (from === "dm") {
+                terminal.innerHTML += `\n${text}\n`;
+              }
+            });
+          }
+        } else {
+          terminal.innerHTML += `\n> Incorrect. Try again.\n`;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
