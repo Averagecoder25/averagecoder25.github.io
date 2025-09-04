@@ -1,69 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>DM Control Panel</title>
   <style>
     body {
-      background-color: black;
-      color: #00ff00;
       font-family: monospace;
       padding: 20px;
-    }
-    input {
-      background: black;
+      background: #111;
       color: #00ff00;
-      border: none;
-      outline: none;
-      font-family: monospace;
-      font-size: 16px;
-      width: 100%;
     }
-    #log {
+    #chat {
+      height: 70vh;
+      overflow-y: auto;
+      border: 1px solid #00ff00;
+      padding: 10px;
       margin-bottom: 10px;
       white-space: pre-wrap;
+    }
+    #dmInput {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      font-family: monospace;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
   <h2>DM Control Panel</h2>
-  <div id="log"></div>
-  <input type="text" id="dmInput" placeholder="Type reply..." />
+  <div id="chat"></div>
+  <input type="text" id="dmInput" placeholder="Type your reply here..." />
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
+  <script>
+    // Firebase configuration (same as NODE)
     const firebaseConfig = {
       apiKey: "AIzaSyC3tY4jN2h1hFQyC1KvEadKznh0Vm53zJE",
       authDomain: "dnd-terminal.firebaseapp.com",
-      databaseURL: "https://dnd-terminal-default-rtdb.firebaseio.com/",
+      databaseURL: "ttps://dnd-terminal-default-rtdb.firebaseio.com",
       projectId: "dnd-terminal",
-      storageBucket: "dnd-terminal.firebasestorage.ap",
+      storageBucket: "dnd-terminal.firebasestorage.app",
       messagingSenderId: "884813360457",
       appId: "1:884813360457:web:431d54614702e372497e98"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const chatRef = db.ref("chat");
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const chatDiv = document.getElementById("chat");
+    const dmInput = document.getElementById("dmInput");
 
-    const log = document.getElementById("log");
-    const input = document.getElementById("dmInput");
-    const msgRef = ref(db, "messages");
-
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const msg = input.value.trim();
-        if (msg) {
-          push(msgRef, { from: "dm", text: msg });
-        }
-        input.value = "";
+    // Show incoming messages
+    chatRef.on("child_added", snapshot => {
+      const data = snapshot.val();
+      if (data.from === "PLAYER") {
+        chatDiv.innerHTML += `[PLAYER] ${data.text}\n`;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
       }
     });
 
-    onChildAdded(msgRef, (data) => {
-      const { from, text } = data.val();
-      log.innerHTML += `${from}: ${text}\n`;
+    // Send DM message
+    dmInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const val = dmInput.value.trim();
+        if (val) {
+          chatRef.push({ from: "DM", text: val });
+          chatDiv.innerHTML += `[DM] ${val}\n`;
+          chatDiv.scrollTop = chatDiv.scrollHeight;
+          dmInput.value = "";
+        }
+      }
     });
   </script>
 </body>
