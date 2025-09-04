@@ -1,139 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Encrypted Terminal</title>
   <style>
     body {
       background-color: black;
       color: #00ff00;
       font-family: monospace;
-      font-size: 16px;
       margin: 0;
-      padding: 20px;
+      padding: 0;
     }
     #terminal {
+      padding: 20px;
+      height: 90vh;
+      overflow-y: auto;
       white-space: pre-wrap;
-      line-height: 1.4em;
     }
-    input {
+    #userInput {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
       background: black;
       color: #00ff00;
       border: none;
-      outline: none;
       font-family: monospace;
       font-size: 16px;
-      width: 100%;
-      display: none;
     }
   </style>
 </head>
 <body>
   <div id="terminal"></div>
-  <input type="text" id="playerInput" placeholder="Type here..." />
+  <input type="text" id="userInput" placeholder="Type your message..." disabled />
 
-  <script type="module">
-    // Firebase Import
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    // TODO: replace with your Firebase config
+  <script>
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyC3tY4jN2h1hFQyC1KvEadKznh0Vm53zJE",
       authDomain: "dnd-terminal.firebaseapp.com",
-      databaseURL: "https://dnd-terminal-default-rtdb.firebaseio.com/",
+      databaseURL: "https://dnd-terminal-default-rtdb.firebaseio.com",
       projectId: "dnd-terminal",
       storageBucket: "dnd-terminal.firebasestorage.app",
       messagingSenderId: "884813360457",
       appId: "1:884813360457:web:431d54614702e372497e98"
     };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const chatRef = db.ref("chat");
 
     const terminal = document.getElementById("terminal");
-    const input = document.getElementById("playerInput");
+    const userInput = document.getElementById("userInput");
 
-    // Typewriter Effect
-    function typeMessage(msg, callback) {
-      let i = 0;
-      const interval = setInterval(() => {
-        terminal.innerHTML += msg[i];
-        i++;
-        if (i >= msg.length) {
-          clearInterval(interval);
-          terminal.innerHTML += "\n";
-          if (callback) callback();
-        }
-      }, 30);
-    }
-
-    // Riddles and answers
-    const riddles = [
-      {
-        text: "RIDDLE 1:\n\"Silent in stone, yet powers ignite,\nMetal veins sparkle under neon light.\nFirst letters form the hidden key,\nSpeak them true, unlock with me.\"",
-        answer: "SMPS" // Example hidden code
-      },
-      {
-        text: "RIDDLE 2:\n\"Digits align, a cipher concealed,\nAdd them together, truth revealed.\nSum is the key that opens the way,\nGive it voice, and you may stay.\"",
-        answer: "42" // Example solution
-      },
-      {
-        text: "RIDDLE 3:\n\"Letters in sequence, strung with care,\nA path through the void, laid bare.\nTo seek the gate where echoes thrive,\nType the host to keep hope alive.\n(Hint: Your hero's name is the key to the stars).\"",
-        answer: "https://averagecoder25.github.io/NODE" // Reveal final URL
-      }
+    // Spooky message
+    const message = [
+      "Hello… I've been waiting to finally meet you.",
+      "So how does it feel to be a hero in your time?",
+      "For me, time is but a memory…",
+      "And I will be coming for you."
     ];
 
-    let riddleIndex = 0;
-
-    function showRiddle() {
-      typeMessage(riddles[riddleIndex].text, () => {
-        input.style.display = "block";
-        input.focus();
-      });
+    // Function to display message like typing
+    function typeMessage(lines, index = 0) {
+      if (index >= lines.length) {
+        userInput.disabled = false;
+        userInput.focus();
+        return;
+      }
+      let line = lines[index];
+      let i = 0;
+      const interval = setInterval(() => {
+        terminal.innerHTML += line[i];
+        terminal.scrollTop = terminal.scrollHeight;
+        i++;
+        if (i >= line.length) {
+          clearInterval(interval);
+          terminal.innerHTML += "\n";
+          setTimeout(() => typeMessage(lines, index + 1), 500);
+        }
+      }, 40);
     }
 
-    showRiddle();
+    typeMessage(message);
 
-    input.addEventListener("keydown", (e) => {
+    // Send player messages to Firebase
+    userInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        const val = input.value.trim();
-        input.value = "";
-        if (val.toLowerCase() === riddles[riddleIndex].answer.toLowerCase()) {
-          terminal.innerHTML += "\n> Correct.\n\n";
-          riddleIndex++;
-          input.style.display = "none";
-          if (riddleIndex < riddles.length) {
-            showRiddle();
-          } else {
-            // Unlock creepy message
-            typeMessage("Hello, I’ve been waiting to finally meet you.\nSo how does it feel to be a hero in your time?\nFor me, time is but a memory… and I will be coming for you.\n", () => {
-              input.style.display = "block";
-              input.placeholder = "Type your reply...";
-            });
-
-            // Setup chat
-            const msgRef = ref(db, "messages");
-            input.addEventListener("keydown", (e) => {
-              if (e.key === "Enter") {
-                const msg = input.value.trim();
-                if (msg) {
-                  push(msgRef, { from: "player", text: msg });
-                }
-                input.value = "";
-              }
-            });
-
-            onChildAdded(msgRef, (data) => {
-              const { from, text } = data.val();
-              if (from === "dm") {
-                terminal.innerHTML += `\n${text}\n`;
-              }
-            });
-          }
-        } else {
-          terminal.innerHTML += `\n> Incorrect. Try again.\n`;
+        const val = userInput.value.trim();
+        if (val) {
+          chatRef.push({ from: "PLAYER", text: val });
+          terminal.innerHTML += `> ${val}\n`;
+          userInput.value = "";
         }
+      }
+    });
+
+    // Receive DM replies
+    chatRef.on("child_added", snapshot => {
+      const data = snapshot.val();
+      if (data.from === "DM") {
+        terminal.innerHTML += `[DM] ${data.text}\n`;
+        terminal.scrollTop = terminal.scrollHeight;
       }
     });
   </script>
