@@ -2,36 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Encrypted Terminal</title>
+  <title>Terminal</title>
   <style>
     body {
       background-color: black;
       color: #00ff00;
-      font-family: monospace;
-      margin: 0;
-      padding: 0;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
     }
     #terminal {
-      padding: 20px;
-      height: 90vh;
-      overflow-y: auto;
       white-space: pre-wrap;
+      min-height: 300px;
     }
     #userInput {
       width: 100%;
-      padding: 10px;
-      box-sizing: border-box;
       background: black;
       color: #00ff00;
       border: none;
-      font-family: monospace;
+      font-family: 'Courier New', monospace;
       font-size: 16px;
+      outline: none;
     }
   </style>
 </head>
 <body>
   <div id="terminal"></div>
-  <input type="text" id="userInput" placeholder="Type your message..." disabled />
+  <input type="text" id="userInput" placeholder="Type here..." autofocus>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -42,51 +38,39 @@
     const firebaseConfig = {
       apiKey: "AIzaSyC3tY4jN2h1hFQyC1KvEadKznh0Vm53zJE",
       authDomain: "dnd-terminal.firebaseapp.com",
-      databaseURL: "https://dnd-terminal-default-rtdb.firebaseio.com",
+      databaseURL: "ttps://dnd-terminal-default-rtdb.firebaseio.com",
       projectId: "dnd-terminal",
       storageBucket: "dnd-terminal.firebasestorage.app",
       messagingSenderId: "884813360457",
       appId: "1:884813360457:web:431d54614702e372497e98"
     };
+
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const chatRef = db.ref("chat");
+
+    // Generate unique session ID
+    const sessionId = Date.now().toString() + Math.floor(Math.random() * 1000).toString();
+    const chatRef = firebase.database().ref(`chat/${sessionId}`);
+    console.log("Session ID:", sessionId);
 
     const terminal = document.getElementById("terminal");
     const userInput = document.getElementById("userInput");
 
-    // Spooky message
-    const message = [
-      "Hello… I've been waiting to finally meet you.",
-      "So how does it feel to be a hero in your time?",
-      "For me, time is but a memory…",
-      "And I will be coming for you."
-    ];
+    // Spooky message sequence
+    const message = "Hello. I've been waiting to finally meet you.\nSo how does it feel to be a hero in your time?\nFor me, time is but a memory, and I will be coming for you.\n";
+    let index = 0;
 
-    // Function to display message like typing
-    function typeMessage(lines, index = 0) {
-      if (index >= lines.length) {
-        userInput.disabled = false;
-        userInput.focus();
-        return;
+    function typeMessage() {
+      if (index < message.length) {
+        terminal.innerHTML += message.charAt(index);
+        index++;
+        setTimeout(typeMessage, 50); // typing speed
       }
-      let line = lines[index];
-      let i = 0;
-      const interval = setInterval(() => {
-        terminal.innerHTML += line[i];
-        terminal.scrollTop = terminal.scrollHeight;
-        i++;
-        if (i >= line.length) {
-          clearInterval(interval);
-          terminal.innerHTML += "\n";
-          setTimeout(() => typeMessage(lines, index + 1), 500);
-        }
-      }, 40);
     }
 
-    typeMessage(message);
+    // Start typing automatically
+    typeMessage();
 
-    // Send player messages to Firebase
+    // Send player input to Firebase
     userInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         const val = userInput.value.trim();
@@ -98,12 +82,11 @@
       }
     });
 
-    // Receive DM replies
-    chatRef.on("child_added", snapshot => {
+    // Listen for DM responses
+    chatRef.on('child_added', snapshot => {
       const data = snapshot.val();
-      if (data.from === "DM") {
+      if(data.from === "DM") {
         terminal.innerHTML += `[DM] ${data.text}\n`;
-        terminal.scrollTop = terminal.scrollHeight;
       }
     });
   </script>
