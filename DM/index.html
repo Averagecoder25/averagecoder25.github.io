@@ -1,87 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DM Control Panel</title>
-  <style>
-    body {
-      font-family: 'Courier New', monospace;
-      background-color: #111;
-      color: #00ff00;
-      padding: 20px;
-    }
-    h2 {
-      color: #00ff00;
-    }
-    #chat {
-      border: 2px solid #00ff00;
-      height: 400px;
-      overflow-y: scroll;
-      padding: 10px;
-      background: black;
-      white-space: pre-wrap;
-    }
-    #dmInput {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background: black;
-      color: #00ff00;
-      border: 2px solid #00ff00;
-      font-family: 'Courier New', monospace;
-      font-size: 16px;
-      outline: none;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>DM Control Panel</title>
+<style>
+  body {
+    background-color: black;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    padding: 20px;
+  }
+
+  h2 {
+    color: #00ff00;
+  }
+
+  #chat {
+    border: 2px solid #00ff00;
+    height: 400px;
+    overflow-y: scroll;
+    padding: 10px;
+    background: black;
+    white-space: pre-wrap;
+  }
+
+  #dmInput {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background: black;
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    outline: none;
+    caret-color: #00ff00;
+  }
+
+  /* Blinking cursor effect for input placeholder */
+  #dmInput::placeholder {
+    color: #00ff00;
+    animation: blink 1s step-start infinite;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+</style>
 </head>
 <body>
-  <h2>DM Control Panel</h2>
-  <div id="chat"></div>
-  <input type="text" id="dmInput" placeholder="Type message here...">
+<h2>DM Control Panel</h2>
+<div id="chat"></div>
+<input type="text" id="dmInput" placeholder="Type message here...">
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <script>
-    const firebaseConfig = {
-       apiKey: "AIzaSyC3tY4jN2h1hFQyC1KvEadKznh0Vm53zJE",
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyC3tY4jN2h1hFQyC1KvEadKznh0Vm53zJE",
       authDomain: "dnd-terminal.firebaseapp.com",
       databaseURL: "ttps://dnd-terminal-default-rtdb.firebaseio.com",
       projectId: "dnd-terminal",
       storageBucket: "dnd-terminal.firebasestorage.app",
       messagingSenderId: "884813360457",
       appId: "1:884813360457:web:431d54614702e372497e98"
-    };
+  };
 
-    firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig);
 
-    const chatDiv = document.getElementById("chat");
-    const dmInput = document.getElementById("dmInput");
+  const chatDiv = document.getElementById("chat");
+  const dmInput = document.getElementById("dmInput");
 
-    // Automatically get latest session
-    let sessionRef;
-    firebase.database().ref('chat').limitToLast(1).on('child_added', snapshot => {
-      const sessionId = snapshot.key;
-      sessionRef = firebase.database().ref(`chat/${sessionId}`);
+  // Listen for latest session
+  let sessionRef;
+  firebase.database().ref('chat').limitToLast(1).on('child_added', snapshot => {
+    const sessionId = snapshot.key;
+    sessionRef = firebase.database().ref(`chat/${sessionId}`);
 
-      // Listen for all messages in this session
-      sessionRef.on('child_added', snap => {
-        const data = snap.val();
-        chatDiv.innerHTML += `[${data.from}] ${data.text}\n`;
-        chatDiv.scrollTop = chatDiv.scrollHeight;
-      });
+    sessionRef.on('child_added', snap => {
+      const data = snap.val();
+      chatDiv.innerHTML += `[${data.from}] ${data.text}\n`;
+      chatDiv.scrollTop = chatDiv.scrollHeight;
     });
+  });
 
-    // Send DM message
-    dmInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const val = dmInput.value.trim();
-        if (val && sessionRef) {
-          sessionRef.push({ from: "DM", text: val });
-          dmInput.value = "";
-        }
+  // Send DM message
+  dmInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const val = dmInput.value.trim();
+      if (val && sessionRef) {
+        sessionRef.push({ from: "DM", text: val });
+        dmInput.value = "";
       }
-    });
-  </script>
+    }
+  });
+</script>
 </body>
 </html>
