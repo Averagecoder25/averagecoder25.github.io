@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DM Control Panel</title>
+  <style>
+    body {
+      background-color: black;
+      color: #00ff00;
+      font-family: monospace;
+      padding: 20px;
+    }
+    input {
+      background: black;
+      color: #00ff00;
+      border: none;
+      outline: none;
+      font-family: monospace;
+      font-size: 16px;
+      width: 100%;
+    }
+    #log {
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h2>DM Control Panel</h2>
+  <div id="log"></div>
+  <input type="text" id="dmInput" placeholder="Type reply..." />
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR-API-KEY",
+      authDomain: "YOUR-PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR-PROJECT.firebaseio.com",
+      projectId: "YOUR-PROJECT-ID",
+      storageBucket: "YOUR-PROJECT.appspot.com",
+      messagingSenderId: "YOUR-SENDER-ID",
+      appId: "YOUR-APP-ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const log = document.getElementById("log");
+    const input = document.getElementById("dmInput");
+    const msgRef = ref(db, "messages");
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const msg = input.value.trim();
+        if (msg) {
+          push(msgRef, { from: "dm", text: msg });
+        }
+        input.value = "";
+      }
+    });
+
+    onChildAdded(msgRef, (data) => {
+      const { from, text } = data.val();
+      log.innerHTML += `${from}: ${text}\n`;
+    });
+  </script>
+</body>
+</html>
