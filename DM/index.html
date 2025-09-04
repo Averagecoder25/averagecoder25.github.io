@@ -4,45 +4,22 @@
   <meta charset="UTF-8">
   <title>DM Control Panel</title>
   <style>
-    body {
-      font-family: monospace;
-      padding: 20px;
-      background: #111;
-      color: #00ff00;
-    }
-    #chat {
-      height: 70vh;
-      overflow-y: auto;
-      border: 1px solid #00ff00;
-      padding: 10px;
-      margin-bottom: 10px;
-      white-space: pre-wrap;
-    }
-    #dmInput {
-      width: 100%;
-      padding: 10px;
-      box-sizing: border-box;
-      background: black;
-      color: #00ff00;
-      border: 1px solid #00ff00;
-      font-family: monospace;
-      font-size: 16px;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #chat { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; background: #f0f0f0; }
+    #dmInput { width: 100%; padding: 10px; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h2>DM Control Panel</h2>
   <div id="chat"></div>
-  <input type="text" id="dmInput" placeholder="Type your reply here..." />
+  <input type="text" id="dmInput" placeholder="Type message here...">
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script>
-    // Firebase configuration (same as NODE)
     const firebaseConfig = {
-      apiKey: "AIzaSyC3tY4jN2h1hFQyC1KvEadKznh0Vm53zJE",
+       apiKey: "AIzaSyC3tY4jN2h1hFQyC1KvEadKznh0Vm53zJE",
       authDomain: "dnd-terminal.firebaseapp.com",
       databaseURL: "ttps://dnd-terminal-default-rtdb.firebaseio.com",
       projectId: "dnd-terminal",
@@ -50,30 +27,32 @@
       messagingSenderId: "884813360457",
       appId: "1:884813360457:web:431d54614702e372497e98"
     };
+
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const chatRef = db.ref("chat");
 
     const chatDiv = document.getElementById("chat");
     const dmInput = document.getElementById("dmInput");
 
-    // Show incoming messages
-    chatRef.on("child_added", snapshot => {
-      const data = snapshot.val();
-      if (data.from === "PLAYER") {
-        chatDiv.innerHTML += `[PLAYER] ${data.text}\n`;
+    // Get latest session automatically
+    let sessionRef;
+    firebase.database().ref('chat').limitToLast(1).on('child_added', snapshot => {
+      const sessionId = snapshot.key;
+      sessionRef = firebase.database().ref(`chat/${sessionId}`);
+
+      // Listen for all messages in this session
+      sessionRef.on('child_added', snap => {
+        const data = snap.val();
+        chatDiv.innerHTML += `[${data.from}] ${data.text}\n`;
         chatDiv.scrollTop = chatDiv.scrollHeight;
-      }
+      });
     });
 
     // Send DM message
     dmInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         const val = dmInput.value.trim();
-        if (val) {
-          chatRef.push({ from: "DM", text: val });
-          chatDiv.innerHTML += `[DM] ${val}\n`;
-          chatDiv.scrollTop = chatDiv.scrollHeight;
+        if (val && sessionRef) {
+          sessionRef.push({ from: "DM", text: val });
           dmInput.value = "";
         }
       }
